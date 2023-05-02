@@ -171,3 +171,17 @@ dist
 # Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
 # More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
 Cargo.lock
+
+### Tree-Sitter ###
+
+# From the debug test tool
+/log.html
+
+# Generated for the playground
+/tree-sitter-*.wasm
+
+# Created for bindings, delete these if you want to push the build files to the repo.
+/Cargo.toml
+/binding.gyp
+/bindings/
+/src/
