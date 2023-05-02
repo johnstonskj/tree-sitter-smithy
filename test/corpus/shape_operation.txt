@@ -1,0 +1,30 @@
+=======================
+Service Type: Operation
+=======================
+
+namespace smithy.tree_sitter.test
+
+operation GetCurrentTime {
+    input: GetCurrentTimeInput
+    output: GetCurrentTimeOutput
+}
+
+---
+
+(idl
+   (shape_section
+     namespace: (namespace_statement
+       (namespace))
+     shapes: (shape_statements
+       (shape_statement
+         body: (operation_statement
+           name: (identifier)
+           body: (operation_body
+             (operation_input
+               type: (shape_id
+                 shape_id: (identifier)))
+             (operation_output
+               type: (shape_id
+                 shape_id: (identifier)))))))))
+
+

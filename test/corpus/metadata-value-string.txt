@@ -1,0 +1,16 @@
+====================
+Metadata with String
+====================
+
+metadata greeting = "hello"
+
+---
+
+(idl
+  (metadata_section
+    (metadata_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (string_value
+          (string))))))

@@ -1,0 +1,15 @@
+===================
+Node Value: Integer
+===================
+
+$integer: 12746
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (number)))))

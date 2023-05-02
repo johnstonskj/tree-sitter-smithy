@@ -1,0 +1,15 @@
+================
+Node Value: Null
+================
+
+$value_null: null
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (null)))))

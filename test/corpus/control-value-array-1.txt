@@ -1,0 +1,17 @@
+===========================
+Node Value: Singleton Array
+===========================
+
+$array: [1]
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (node_array
+           (node_value
+             (number)))))))

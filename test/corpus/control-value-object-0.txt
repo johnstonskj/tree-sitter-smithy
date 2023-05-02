@@ -1,0 +1,15 @@
+========================
+Node Value: Empty Object
+========================
+
+$object: {}
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (node_object)))))

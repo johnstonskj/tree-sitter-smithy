@@ -1,0 +1,27 @@
+======================================
+Aggregate Type: Map, String to Integer
+======================================
+
+namespace smithy.tree_sitter.test
+
+map IntegerMap {
+    key: String
+    value: Integer
+}
+
+---
+
+(idl
+  (shape_section
+    namespace: (namespace_statement
+      (namespace))
+    shapes: (shape_statements
+      (shape_statement
+        body: (map_statement
+          name: (identifier)
+          (map_key
+            key_type: (shape_id
+            shape_id: (identifier)))
+          (map_value
+            value_type: (shape_id
+              shape_id: (identifier))))))))

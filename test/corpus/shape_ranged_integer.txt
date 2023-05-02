@@ -1,0 +1,36 @@
+============================
+Simple Type: Integer, Ranged
+============================
+
+namespace smithy.tree_sitter.test
+
+@range(min: 1, max: 10)
+integer OneToTen
+
+---
+
+(idl
+  (shape_section
+    namespace: (namespace_statement
+      (namespace))
+    shapes: (shape_statements
+      (shape_statement
+        traits: (applied_traits
+          (trait
+            type: (shape_id
+              shape_id: (identifier))
+            body: (trait_structure
+              (trait_structure_kvp
+                key: (node_object_key
+                  (identifier))
+                value: (node_value
+                  (number)))
+              (trait_structure_kvp
+                key: (node_object_key
+                  (identifier))
+                value: (node_value
+                  (number))))))
+        body: (simple_shape_statement
+          type: (type_integer)
+          name: (identifier))))))
+

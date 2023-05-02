@@ -1,0 +1,21 @@
+======================
+Node Value: Text Block
+======================
+
+$_text_block: """
+Here is some text
+in
+a
+block.
+"""
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (string_value
+          (string))))))

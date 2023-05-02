@@ -1,0 +1,54 @@
+=====================
+Aggregate Type: Union
+=====================
+
+namespace smithy.tree_sitter.test
+
+union MyUnion {
+    i32: Integer
+
+    @length(min: 1, max: 100)
+    string: String,
+
+    time: Timestamp,
+}
+
+---
+
+(idl
+   (shape_section
+     namespace: (namespace_statement
+       (namespace))
+     shapes: (shape_statements
+     (shape_statement
+       body: (union_statement
+         name: (identifier)
+         members: (union_members
+           (union_member
+             name: (identifier)
+             type: (shape_id
+               shape_id: (identifier)))
+           (union_member
+             traits: (applied_traits
+               (trait
+                 type: (shape_id
+                   shape_id: (identifier))
+                 body: (trait_structure
+                   (trait_structure_kvp
+                     key: (node_object_key
+                       (identifier))
+                     value: (node_value
+                       (number)))
+                   (trait_structure_kvp
+                     key: (node_object_key
+                       (identifier))
+                     value: (node_value
+                       (number))))))
+             name: (identifier)
+             type: (shape_id
+               shape_id: (identifier)))
+           (union_member
+             name: (identifier)
+             type: (shape_id
+               shape_id: (identifier)))))))))
+

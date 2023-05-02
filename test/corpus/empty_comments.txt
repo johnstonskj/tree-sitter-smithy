@@ -1,0 +1,14 @@
+=========================
+Empty file, with Comments
+=========================
+
+// This is an empty file
+
+// seriously.
+
+---
+
+(idl
+  (line_comment)
+  (line_comment))
+

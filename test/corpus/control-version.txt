@@ -1,0 +1,16 @@
+=====================
+Just a version number
+=====================
+
+$version: "2"
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (string_value
+          (string))))))

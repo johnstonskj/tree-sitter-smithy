@@ -1,0 +1,22 @@
+=======================
+Node Value: Quoted Text
+=======================
+
+$boolean_true: tRue
+
+$boolean_false: false
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (boolean)))
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (boolean)))))

@@ -1,0 +1,23 @@
+============================
+Aggregate Type: List, String
+============================
+
+namespace smithy.tree_sitter.test
+
+list MyList {
+    member: String
+}
+
+---
+
+(idl
+  (shape_section
+     namespace: (namespace_statement
+       (namespace))
+     shapes: (shape_statements
+       (shape_statement
+         body: (list_statement
+           name: (identifier)
+           (list_member
+             member_type: (shape_id
+               shape_id: (identifier))))))))

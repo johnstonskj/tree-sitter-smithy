@@ -1,0 +1,17 @@
+===========================
+Node Value: ShapeID as Text
+===========================
+
+$shape_id: fizz_Buzz
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (string_value
+          (shape_id
+            shape_id: (identifier)))))))

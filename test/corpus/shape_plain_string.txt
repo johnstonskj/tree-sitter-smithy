@@ -1,0 +1,20 @@
+==========================
+Simple Type: String, Plain
+==========================
+
+namespace smithy.tree_sitter.test
+
+string MyString
+
+
+---
+
+(idl
+  (shape_section
+     namespace: (namespace_statement
+       (namespace))
+     shapes: (shape_statements
+       (shape_statement
+         body: (simple_shape_statement
+           type: (type_string)
+           name: (identifier))))))

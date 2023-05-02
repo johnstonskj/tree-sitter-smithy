@@ -1,0 +1,47 @@
+=========================
+Aggregate Type: Structure
+=========================
+
+namespace smithy.tree_sitter.test
+
+structure MyStructure {
+    foo: String
+
+    @required
+    baz: Integer
+
+    greeting: String = "Hello"
+}
+
+---
+
+
+(idl
+  (shape_section
+   namespace: (namespace_statement
+      (namespace))
+    shapes: (shape_statements
+      (shape_statement
+        body: (structure_statement
+          name: (identifier)
+          members: (structure_members
+            (structure_member
+              name: (identifier)
+              type: (shape_id
+                shape_id: (identifier)))
+            (structure_member
+              traits: (trait
+                type: (shape_id
+                  shape_id: (identifier)))
+              name: (identifier)
+              type: (shape_id
+                shape_id: (identifier)))
+            (structure_member
+              name: (identifier)
+              type: (shape_id
+                shape_id: (identifier))
+              value: (value_assignment
+                (node_value
+                  (string_value
+                    (string)))))))))))
+

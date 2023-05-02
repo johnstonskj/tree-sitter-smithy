@@ -1,0 +1,16 @@
+=======================
+Node Value: Quoted Text
+=======================
+
+$_quoted_text: "Hello\\nWorld: \\uFF"
+
+---
+
+(idl
+  (control_section
+    (control_statement
+      key: (node_object_key
+        (identifier))
+      value: (node_value
+        (string_value
+          (string))))))

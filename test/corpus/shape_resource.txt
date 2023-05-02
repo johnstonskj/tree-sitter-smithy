@@ -1,0 +1,61 @@
+======================
+Service Type: Resource
+======================
+
+namespace smithy.tree_sitter.test
+
+resource City {
+    identifiers: { cityId: CityId }
+    read: GetCity
+    list: ListCities
+    resources: [Forecast]
+}
+
+---
+
+(idl
+   (shape_section
+     namespace: (namespace_statement
+       (namespace))
+     shapes: (shape_statements
+       (shape_statement
+         body: (resource_statement
+           name: (identifier)
+           members: (node_object
+             (node_object_kvp
+               key: (node_object_key
+                 (identifier))
+               value: (node_value
+                 (node_object
+                   (node_object_kvp
+                     key: (node_object_key
+                       (identifier))
+                     value: (node_value
+                       (string_value
+                         (shape_id
+                           shape_id: (identifier))))))))
+             (node_object_kvp
+               key: (node_object_key
+                 (identifier))
+               value: (node_value
+                 (string_value
+                   (shape_id
+                     shape_id: (identifier)))))
+             (node_object_kvp
+               key: (node_object_key
+                 (identifier))
+               value: (node_value
+                 (string_value
+                   (shape_id
+                     shape_id: (identifier)))))
+             (node_object_kvp
+               key: (node_object_key
+                 (identifier))
+               value: (node_value
+                 (node_array
+                   (node_value
+                     (string_value
+                       (shape_id
+                         shape_id: (identifier)))))))))))))
+
+
