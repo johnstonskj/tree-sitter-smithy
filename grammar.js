@@ -11,6 +11,7 @@
 //
 // -------------------------------------------------------------------
 
+const PREC_RESERVED = 2
 const PREC_BINDING = 1
 const PREC_EOL = 0
 const PREC_COMMENT = 0
@@ -22,13 +23,19 @@ const ABS_ROOT_ID = new RegExp('(' + NAMESPACE.source + ')#(' + ID.source + ')')
 const ROOT_ID = new RegExp('((' + ABS_ROOT_ID.source + ')|(' + ID.source + '))')
 const SHAPE_ID = new RegExp(ROOT_ID.source + '(' + MEMBER_ID.source + ')?')
 
-function string_ci(str) {
-    return str.split("").map(c => '[' + c + c.toUpperCase(c) + ']').join("");
-}
+/**
+ * A case-insensitive keyword (copied from VHDL grammar)
+ */
+const reservedWord = word =>
+      // word ||  // when debugging conflict error msgs
+      alias(reserved(caseInsensitive(word)), word);
 
-function regex_ci(str) {
-    return new RegExp(string_ci(str));
-}
+const reserved = regex => token(prec(2, new RegExp(regex)));
+
+const caseInsensitive = word =>
+      word.split('')
+      .map(letter => `[${letter}${letter.toUpperCase()}]`)
+      .join('');
 
 function seq_comma(rule) {
     return seq(
@@ -56,6 +63,14 @@ module.exports = grammar({
     name: 'smithy',
 
     word: $ => $._identifier,
+
+    // -----------------------------------------------------------------------
+    // Configuration
+    // -----------------------------------------------------------------------
+
+    supertypes: $ => [
+        // think about this more: _simple_shape, _aggr_shape, _service_shape,
+    ],
 
     // -----------------------------------------------------------------------
     // Whitespace
@@ -151,7 +166,7 @@ module.exports = grammar({
         // MetadataStatement =
         //     %s"metadata" SP NodeObjectKey [SP] "=" [SP] NodeValue BR
         metadata_statement: $ => seq(
-            regex_ci('metadata'),
+            reservedWord('metadata'),
             field('key', $.node_object_key),
             '=',
             field('value', $.node_value),
@@ -238,9 +253,16 @@ module.exports = grammar({
 
         // NodeKeywords =
         //     %s"true" / %s"false" / %s"null"
-        boolean: $ => new RegExp(string_ci('true') + '|' + string_ci('false')),
+        boolean: $ => choice(
+            $.true,
+            $.false
+        ),
 
-        null: $ => regex_ci('null'),
+        true: $ => reservedWord('true'),
+
+        false: $ => reservedWord('false'),
+
+        null: $ => reservedWord('null'),
 
         // NodeStringValue =
         //     ShapeId / TextBlock / QuotedText
@@ -384,7 +406,7 @@ module.exports = grammar({
         // NamespaceStatement =
         //     %s"namespace" SP Namespace BR
         namespace_statement: $ => seq(
-            regex_ci('namespace'),
+            reservedWord('namespace'),
             $.namespace,
             $._eol
         ),
@@ -392,10 +414,12 @@ module.exports = grammar({
         // UseStatement =
         //     %s"use" SP AbsoluteRootShapeId BR
         _use_statement: $ => seq(
-            regex_ci('use'),
-            $._absolute_root_shape_id,
+            reservedWord('use'),
+            $.external_shape_id,
             $._eol
         ),
+
+        external_shape_id: $ => $._absolute_root_shape_id,
 
         // ShapeStatements =
         //     ShapeOrApplyStatement *(BR ShapeOrApplyStatement)
@@ -466,24 +490,24 @@ module.exports = grammar({
             $.type_timestamp,
         ),
 
-        type_blob: $ => regex_ci('blob'),
-        type_boolean: $ => regex_ci('boolean'),
-        type_document: $ => regex_ci('document'),
-        type_string: $ => regex_ci('string'),
-        type_byte: $ => regex_ci('byte'),
-        type_short: $ => regex_ci('short'),
-        type_integer: $ => regex_ci('integer'),
-        type_long: $ => regex_ci('long'),
-        type_float: $ => regex_ci('float'),
-        type_double: $ => regex_ci('double'),
-        type_big_integer: $ => regex_ci('bigInteger'),
-        type_big_decimal: $ => regex_ci('bigDecimal'),
-        type_timestamp: $ => regex_ci('timestamp'),
+        type_blob: $ => reservedWord('blob'),
+        type_boolean: $ => reservedWord('boolean'),
+        type_document: $ => reservedWord('document'),
+        type_string: $ => reservedWord('string'),
+        type_byte: $ => reservedWord('byte'),
+        type_short: $ => reservedWord('short'),
+        type_integer: $ => reservedWord('integer'),
+        type_long: $ => reservedWord('long'),
+        type_float: $ => reservedWord('float'),
+        type_double: $ => reservedWord('double'),
+        type_big_integer: $ => reservedWord('bigInteger'),
+        type_big_decimal: $ => reservedWord('bigDecimal'),
+        type_timestamp: $ => reservedWord('timestamp'),
 
         // Mixins =
         //     [SP] %s"with" [WS] "[" 1*([WS] ShapeId) [WS] "]"
         mixins: $ => seq(
-            regex_ci('with'),
+            reservedWord('with'),
             '[',
             comma_repeat1($.shape_id),
             ']'
@@ -497,14 +521,18 @@ module.exports = grammar({
             field(
                 'type',
                 choice(
-                    alias(regex_ci('enum'), 'enum'),
-                    alias(regex_ci('intEnum'), 'int_enum')
+                    $.type_enum,
+                    $.type_int_enum
                 )
             ),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('members', $.enum_members)
         ),
+
+        type_enum: $ => reservedWord('enum'),
+
+        type_int_enum: $ => reservedWord('intEnum'),
 
         // EnumShapeMembers =
         //     "{" [WS] 1*(TraitStatements Identifier [ValueAssignment] [WS]) "}"
@@ -533,7 +561,7 @@ module.exports = grammar({
         // ListStatement =
         //     %s"list" SP Identifier [Mixins] [WS] ListMembers
         list_statement: $ => seq(
-            regex_ci('list'),
+            reservedWord('list'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             $._list_members),
@@ -554,7 +582,7 @@ module.exports = grammar({
         //     %s"member" [SP] ":" [SP] ShapeId
         list_member: $ => seq(
             field('traits', optional($.applied_traits)),
-            regex_ci('member'),
+            reservedWord('member'),
             field(
                 'member_type',
                 optional(
@@ -569,7 +597,7 @@ module.exports = grammar({
         // MapStatement =
         //     %s"map" SP Identifier [Mixins] [WS] MapMembers
         map_statement: $ => seq(
-            regex_ci('map'),
+            reservedWord('map'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             $._map_members
@@ -600,7 +628,7 @@ module.exports = grammar({
         //     %s"key" [SP] ":" [SP] ShapeId
         map_key: $ => seq(
             field('traits', optional($.applied_traits)),
-            regex_ci('key'),
+            reservedWord('key'),
             field(
                 'key_type',
                 optional(
@@ -617,64 +645,64 @@ module.exports = grammar({
         // ElidedMapValue =
         //     %s"$value"
         // ExplicitMapValue =
-            //     %s"value" [SP] ":" [SP] ShapeId
-            map_value: $ => seq(
-                field('traits', repeat($.trait)),
-                regex_ci('value'),
-                field(
-                    'value_type',
-                    optional(
-                        seq(
-                            ':',
-                            $.shape_id
-                        )
+        //     %s"value" [SP] ":" [SP] ShapeId
+        map_value: $ => seq(
+            field('traits', repeat($.trait)),
+            reservedWord('value'),
+            field(
+                'value_type',
+                optional(
+                    seq(
+                        ':',
+                        $.shape_id
                     )
                 )
-            ),
+            )
+        ),
 
-            // StructureStatement =
-            //     %s"structure" SP Identifier [StructureResource]
-            //         [Mixins] [WS] StructureMembers
-            structure_statement: $ => seq(
-                regex_ci('structure'),
-                field('name', $.identifier),
-                field('resource', optional($._structure_resource)),
-                field('mixins', optional($.mixins)),
-                field('members', $.structure_members)
-            ),
+        // StructureStatement =
+        //     %s"structure" SP Identifier [StructureResource]
+        //         [Mixins] [WS] StructureMembers
+        structure_statement: $ => seq(
+            reservedWord('structure'),
+            field('name', $.identifier),
+            field('resource', optional($.structure_resource)),
+            field('mixins', optional($.mixins)),
+            field('members', $.structure_members)
+        ),
 
-            // StructureResource =
-            //     SP %s"for" SP ShapeId
-            _structure_resource: $ => seq(
-                regex_ci('for'),
-                $.shape_id
-            ),
+        // StructureResource =
+        //     SP %s"for" SP ShapeId
+        structure_resource: $ => seq(
+            reservedWord('for'),
+            $.shape_id
+        ),
 
-            // StructureMembers =
-            //     "{" [WS] *(TraitStatements StructureMember [WS]) "}"
-            structure_members: $ => seq(
-                '{',
-                comma_repeat($.structure_member),
-                '}'
-            ),
+        // StructureMembers =
+        //     "{" [WS] *(TraitStatements StructureMember [WS]) "}"
+        structure_members: $ => seq(
+            '{',
+            comma_repeat($.structure_member),
+            '}'
+        ),
 
-            // StructureMember =
-            //     (ExplicitStructureMember / ElidedStructureMember) [ValueAssignment]
-            // ExplicitStructureMember =
-            //     Identifier [SP] ":" [SP] ShapeId
-            // ElidedStructureMember =
-            //     "$" Identifier
-            structure_member: $ => seq(
-                field('traits', repeat($.trait)),
-                $._structure_or_union_member,
-                field('value', optional($.value_assignment))
-            ),
+        // StructureMember =
+        //     (ExplicitStructureMember / ElidedStructureMember) [ValueAssignment]
+        // ExplicitStructureMember =
+        //     Identifier [SP] ":" [SP] ShapeId
+        // ElidedStructureMember =
+        //     "$" Identifier
+        structure_member: $ => seq(
+            field('traits', repeat($.trait)),
+            $._structure_or_union_member,
+            field('value', optional($.value_assignment))
+        ),
 
-            // StructureMember =
-            //     (ExplicitStructureMember / ElidedStructureMember)
-            // ExplicitStructureMember =
-            //     Identifier [SP] ":" [SP] ShapeId
-            // ElidedStructureMember =
+        // StructureMember =
+        //     (ExplicitStructureMember / ElidedStructureMember)
+        // ExplicitStructureMember =
+        //     Identifier [SP] ":" [SP] ShapeId
+        // ElidedStructureMember =
         //     "$" Identifier
         _structure_or_union_member: $ => seq(
             choice(
@@ -693,7 +721,7 @@ module.exports = grammar({
         // UnionStatement =
         //     %s"union" SP Identifier [Mixins] [WS] UnionMembers
         union_statement: $ => seq(
-            regex_ci('union'),
+            reservedWord('union'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('members', $.union_members)
@@ -717,7 +745,7 @@ module.exports = grammar({
         // ServiceStatement =
         //     %s"service" SP Identifier [Mixins] [WS] NodeObject
         service_statement: $ => seq(
-            regex_ci('service'),
+            reservedWord('service'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('members', $.node_object)
@@ -726,7 +754,7 @@ module.exports = grammar({
         // ResourceStatement =
         //     %s"resource" SP Identifier [Mixins] [WS] NodeObject
         resource_statement: $ => seq(
-            regex_ci('resource'),
+            reservedWord('resource'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('members', $.node_object)
@@ -735,24 +763,28 @@ module.exports = grammar({
         // OperationStatement =
         //     %s"operation" SP Identifier [Mixins] [WS] OperationBody
         operation_statement: $ => seq(
-            regex_ci('operation'),
+            reservedWord('operation'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('body', $.operation_body)
         ),
 
-        // OperationBody =
-        //     "{" [WS]
+             // OperationBody =
+             //     "{" [WS]
         //     *(OperationInput / OperationOutput / OperationErrors)
         //     [WS] "}"
         //     ; only one of each property can be specified.
         operation_body: $ => seq(
             '{',
             comma_repeat(
-                choice(
-                    $.operation_input,
-                    $.operation_output,
-                    $.operation_errors
+                seq(
+                    // Note that this is missing from the Smithy specification!
+                    field('traits', optional($.applied_traits)),
+                    choice(
+                        $.operation_input,
+                        $.operation_output,
+                        $.operation_errors
+                    )
                 )
             ),
             '}'
@@ -761,7 +793,7 @@ module.exports = grammar({
         // OperationInput =
         //     %s"input" [WS] (InlineStructure / (":" [WS] ShapeId)) WS
         operation_input: $ => seq(
-            regex_ci('input'),
+            reservedWord('input'),
             field(
                 'type',
                 choice(
@@ -777,7 +809,7 @@ module.exports = grammar({
         // OperationOutput =
         //     %s"output" [WS] (InlineStructure / (":" [WS] ShapeId)) WS
         operation_output: $ => seq(
-            regex_ci('output'),
+            reservedWord('output'),
             field(
                 'type',
                 choice(
@@ -793,7 +825,7 @@ module.exports = grammar({
         // OperationErrors =
         //     %s"errors" [WS] ":" [WS] "[" *([WS] Identifier) [WS] "]" WS
         operation_errors: $ => seq(
-            regex_ci('errors'),
+            reservedWord('errors'),
             ':',
             '[',
             comma_repeat($.identifier),
@@ -806,7 +838,7 @@ module.exports = grammar({
         inline_structure: $ => seq(
             ':=',
             field('traits', optional($.applied_traits)),
-            field('resource', optional($._structure_resource)),
+            field('resource', optional($.structure_resource)),
             field('mixins', optional($.mixins)),
             field('members', $.structure_members)
         ),
@@ -865,7 +897,7 @@ module.exports = grammar({
         // ApplyStatementBlock =
         //     %s"apply" SP ShapeId WS "{" TraitStatements "}"
         apply_statement: $ => seq(
-            regex_ci('apply'),
+            reservedWord('apply'),
             field('target', $.shape_id),
             field(
                 'traits',
@@ -880,4 +912,4 @@ module.exports = grammar({
             )
         ),
     }
-});
+         });

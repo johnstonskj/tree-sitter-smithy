@@ -1,0 +1,62 @@
+#+TITLE: Tree-sitter grammar for Smithy
+#+AUTHOR: Simon Johnston
+#+EMAIL: johnstonskj@gmail.com
+#+LANGUAGE: en
+#+STARTUP: overview hidestars inlineimages entitiespretty
+
+This repository contains a [[https://github.com/tree-sitter/tree-sitter][tree-sitter]] grammar for the [[https://smithy.io/2.0/index.html][Smithy]] /language for defining services and SDKs/.
+
+* Grammar
+
+The grammar corresponds to the version 2.0 Smithy model, it allows for comma-separation in places as per the 2.0
+migration path from the earlier versions that required commas. However, rather than making whitespace explicit in
+the way that Smithy's ABNF does we use the ~comma_repeat~ and ~comma_repeat1~ functions to wrap a rule into such a list.
+
+#+NAME: comma-separated-lists
+#+CAPTION: Comma-Separated List Functions
+#+BEGIN_EXAMPLE javascript
+function seq_comma(rule) {
+    return seq(rule, optional(','));
+}
+
+function comma_repeat1(rule) {
+    return seq(
+        seq_comma(rule),
+        repeat(seq_comma(rule))
+    );
+}
+
+function comma_repeat(rule) {
+    return optional(comma_repeat1(rule));
+}
+#+END_EXAMPLE
+
+This translation did uncover one issue, while traits are heavily used on the members of an =operation= the corresponding
+=OperationBody= production does not allow for Traits.
+
+#+BEGIN_EXAMPLE
+OperationStatement =
+    %s"operation" SP Identifier [Mixins] [WS] OperationBody
+
+OperationBody =
+    "{" [WS]
+    *(OperationInput / OperationOutput / OperationErrors)
+    [WS] "}"
+    ; only one of each property can be specified.
+    
+OperationInput =
+    %s"input" [WS] (InlineStructure / (":" [WS] ShapeId)) WS
+#+END_EXAMPLE
+
+* Queries
+
+TBD
+
+- =highlights= :: the set of queries and mapping to allow for syntax highlighting.
+- =tags= :: the set of queries to extract tags from a source file.
+- =folds= :: a small set of queries to allow for code folding of shapes.
+
+* More Work
+
+TBD
+

@@ -1,6 +1,6 @@
-=======================
-Node Value: Quoted Text
-=======================
+====================
+Node Value: Booleans
+====================
 
 $boolean_true: tRue
 
@@ -14,9 +14,11 @@ $boolean_false: false
       key: (node_object_key
         (identifier))
       value: (node_value
-        (boolean)))
+        (boolean
+          (true))))
     (control_statement
       key: (node_object_key
         (identifier))
       value: (node_value
-        (boolean)))))
+        (boolean
+          (false))))))
