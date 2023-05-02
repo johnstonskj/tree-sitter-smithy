@@ -14,7 +14,7 @@ the way that Smithy's ABNF does we use the ~comma_repeat~ and ~comma_repeat1~ fu
 
 #+NAME: comma-separated-lists
 #+CAPTION: Comma-Separated List Functions
-#+BEGIN_EXAMPLE javascript
+#+BEGIN_EXAMPLE js
 function seq_comma(rule) {
     return seq(rule, optional(','));
 }
@@ -48,9 +48,23 @@ OperationInput =
     %s"input" [WS] (InlineStructure / (":" [WS] ShapeId)) WS
 #+END_EXAMPLE
 
+It might end up something like this:
+
+#+BEGIN_EXAMPLE
+OperationBody =
+    "{" [WS]
+    *(TraitStatements OperationBodyItem)
+    [WS] "}"
+    ; only one of each property can be specified.
+
+OperationBodyItem =
+    (OperationInput / OperationOutput / OperationErrors)
+#+END_EXAMPLE
+
 * Queries
 
-TBD
+If you want to understand how to query the model, check out the tests in =tests/corpus=, or in the following files in
+=queries=.
 
 - =highlights= :: the set of queries and mapping to allow for syntax highlighting.
 - =tags= :: the set of queries to extract tags from a source file.
