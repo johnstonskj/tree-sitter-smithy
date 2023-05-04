@@ -1,4 +1,7 @@
+;; ---------------------------------------------------------------------------
 ;; Names of members
+;; ---------------------------------------------------------------------------
+
 (node_object_key
  (identifier) @name)
 
@@ -8,8 +11,28 @@
 (structure_member
  name: (identifier) @name)
 
+(list_member
+ "member" @name)
 
+(map_key
+ "key" @name)
+
+(map_value
+ "value" @name)
+
+(operation_input
+ "input" @name)
+
+(operation_output
+ "output" @name)
+
+(operation_errors
+ "errors" @name)
+
+;; ---------------------------------------------------------------------------
 ;; Type References
+;; ---------------------------------------------------------------------------
+
 (shape_section
  uses: (external_shape_id) @reference.type)
 
@@ -40,7 +63,10 @@
  target: (shape_id) @reference.type)
 
 
+;; ---------------------------------------------------------------------------
 ;; Type Definitions
+;; ---------------------------------------------------------------------------
+
 (simple_shape_statement
  name: (identifier) @definition.type)
 

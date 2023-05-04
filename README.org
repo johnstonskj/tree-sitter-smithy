@@ -8,6 +8,13 @@ This repository contains a [[https://github.com/tree-sitter/tree-sitter][tree-si
 
 * Grammar
 
+** Keywords
+
+- case-insensitive
+- not reserved
+
+** Whitespace
+
 The grammar corresponds to the version 2.0 Smithy model, it allows for comma-separation in places as per the 2.0
 migration path from the earlier versions that required commas. However, rather than making whitespace explicit in
 the way that Smithy's ABNF does we use the ~comma_repeat~ and ~comma_repeat1~ functions to wrap a rule into such a list.
@@ -30,6 +37,12 @@ function comma_repeat(rule) {
     return optional(comma_repeat1(rule));
 }
 #+END_EXAMPLE
+
+** End-of-line handling
+
+"[BR]" vs "$._eol"
+
+** Missing OperationBody traits
 
 This translation did uncover one issue, while traits are heavily used on the members of an =operation= the corresponding
 =OperationBody= production does not allow for Traits.
@@ -69,6 +82,123 @@ If you want to understand how to query the model, check out the tests in =tests/
 - =highlights= :: the set of queries and mapping to allow for syntax highlighting.
 - =tags= :: the set of queries to extract tags from a source file.
 - =folds= :: a small set of queries to allow for code folding of shapes.
+- =lint= :: the beginnings of lint rules described as queries
+
+** Highlighting
+
+- =@comment= :: line and documentation comments.
+- =@keyword= :: =apply=, =errors=, =for=, =input=, =key=, =list=, =map=, =member=, =metadata=, =namespace=, =operation=, =output=, =resource=,
+  =service=, =structure=, =union=, =use=, =value=, =with=
+- =@punctuation.bracket= :: =(=, =)=, =[=, =]=, ={=, =}=
+- =@number= :: numeric literals.
+- =@string= :: string literals, quoted strings and text blocks.
+- =@constant.builtin= :: =true=, =false=, =null=
+- =@module= :: the value of a =namespace= statement.
+- =@type.definition= :: all shape names.
+- =@keyword.simple_type= :: all simple shape identifiers: =bigDecimal=, =bigInteger=, =blob=, =boolean=, =byte=, =document=, =double=,
+  =enum=, =float=, =intEnum=, =integer=, =long=, =short=, =string=, =timestamp=
+- =@keyword.aggregate_type= :: all aggregate shape identifiers: =list=, =map=, =structure=, =union=
+- =@keyword.service_type= :: all service shape identifiers: =operation=, =resource=, =service=
+- =@constructor= :: enumeration variants
+- =@type= :: =use=-ed shape identifiers, values of type =ShapeID=, mixin references, structure resource references,  structure
+  member types
+- =@variable= :: object value keys and shape member names.
+- =@attribute= :: trait names when applied to a shape.
+
+** Tags
+
+- =@name= :: object value keys, enum variants, shape member names.
+- =@reference.type= :: use=-ed shape identifiers, values of type =ShapeID=, mixin references, structure resource references,  structure
+  member types
+- =@definition.type= :: all shape names.
+
+** Folding
+
+Only /shape/ statements and /apply/ statements are enabled for folding.
+
+** Lint
+
+TBD
+
+* Using
+
+** Neovim
+
+[[https://neovim.io/][Neovim]] has some great tree-sitter support with the [[https://github.com/nvim-treesitter/nvim-treesitter][nvim-tree-sitter]] and a nice in-editor [[https://github.com/nvim-treesitter/playground][playground]]. 
+
+#+BEGIN_EXAMPLE: vim
+call plug#begin()
+
+Plug 'nvim-treesitter/nvim-treesitter'
+
+call plug#end()
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE: lua
+require'nvim-treesitter.configs'.setup {
+    ensure_installed = { "query" }, 
+    ignore_install = { "smithy" },
+    highlight = {
+        // ...
+    },
+    incremental_selection = {
+        // ...
+    },
+    indent = {
+        enable = true
+    },
+    query_linter = {
+        enable = true,
+        use_virtual_text = true,
+        lint_events = {"BufWrite", "CursorHold"},
+    },
+    playground = {
+        enable = true,
+        // ...
+    }
+}
+#+END_EXAMPLE
+
+- ~ensure_installed~ :: 
+- ~ignore_install~ :: remove the builtin smithy grammar.
+- ~playground~ :: obviously enable the playground!
+
+For the rest of the config replace "=// ...=" with the defaults from the tree-sitter and playground documentation.
+
+To allow tree-sitter to do folding based on =folds.scm=, add the following to =init.vim=.
+
+#+BEGIN_EXAMPLE: vimfiles
+set foldmethod=expr
+set foldexpr=nvim_treesitter#foldexpr()
+#+END_EXAMPLE
+
+
+#+BEGIN_EXAMPLE: lua
+local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+
+parser_config.smithy = {
+    install_info = {
+        url = "https://github.com/johnstonskj/tree-sitter-smithy",
+        files = {"src/parser.c"},
+        generate_requires_npm = true, 
+        requires_generate_from_grammar = true,  
+    },
+    filetype = "smithy",
+    maintainers = { "@johnstonskj" },
+}
+#+END_EXAMPLE
+
+Additionally, try the  [[https://github.com/nvim-treesitter/nvim-treesitter-context][nvim-treesitter-context]] and [[https://github.com/nvim-treesitter/nvim-treesitter-refactor][nvim-treesitter-refactor]] plugins based on tree-sitter.
+
+#+BEGIN_EXAMPLE: vim
+call plug#begin()
+
+Plug 'nvim-treesitter/nvim-treesitter'
+Plug 'nvim-treesitter/nvim-treesitter-context' 
+Plug 'nvim-treesitter/playground'
+
+call plug#end()
+#+END_EXAMPLE
 
 * More Work
 

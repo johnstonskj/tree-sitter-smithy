@@ -3,39 +3,54 @@
 // Author:     Simon Johnston <johntonskj@gmail.com>
 // Version:    0.1.0
 // Repository: https://github.com/johnstonskj/tree-sitter-smithy
-//
-// License: MIT
+// License:    MIT
+// Copyright:  Copyright (c) 2023 Simon Johnston
 //
 // This grammar is based on the Smithy 2.0 specification at
 // https://smithy.io/2.0/spec/idl.html
 //
+// For specific details on the translation from the Smithy BNF to this
+// grammar see the "Grammar" section in README.org
+//
 // -------------------------------------------------------------------
 
 const PREC_RESERVED = 2
+const PREC_OPERATOR = 2
 const PREC_BINDING = 1
 const PREC_EOL = 0
 const PREC_COMMENT = 0
 
-const ID = /((_+[a-zA-Z0-9])|[a-zA-Z])[a-zA-Z0-9_]*/
-const NAMESPACE = new RegExp(ID.source + '(\\.' + ID.source + ')*')
-const MEMBER_ID = new RegExp('\\$(' + ID.source + ')')
-const ABS_ROOT_ID = new RegExp('(' + NAMESPACE.source + ')#(' + ID.source + ')')
-const ROOT_ID = new RegExp('((' + ABS_ROOT_ID.source + ')|(' + ID.source + '))')
-const SHAPE_ID = new RegExp(ROOT_ID.source + '(' + MEMBER_ID.source + ')?')
-
 /**
  * A case-insensitive keyword (copied from VHDL grammar)
  */
-const reservedWord = word =>
-      // word ||  // when debugging conflict error msgs
-      alias(reserved(caseInsensitive(word)), word);
+function keyword(word) {
+    // word ||  // when debugging conflict error msgs
+    return alias(kw_from_regex(kw_make_regex(word)), word);
+}
 
-const reserved = regex => token(prec(2, new RegExp(regex)));
+function kw_operator(str) {
+    return token(
+        prec(
+            PREC_OPERATOR,
+            str
+        )
+    );
+}
 
-const caseInsensitive = word =>
-      word.split('')
-      .map(letter => `[${letter}${letter.toUpperCase()}]`)
-      .join('');
+function kw_from_regex(regex) {
+    return token(
+        prec(
+            PREC_RESERVED,
+            new RegExp(regex)
+        )
+    );
+}
+
+function kw_make_regex(word) {
+    return word.split('')
+        .map(letter => `[${letter}${letter.toUpperCase()}]`)
+        .join('');
+}
 
 function seq_comma(rule) {
     return seq(
@@ -166,7 +181,7 @@ module.exports = grammar({
         // MetadataStatement =
         //     %s"metadata" SP NodeObjectKey [SP] "=" [SP] NodeValue BR
         metadata_statement: $ => seq(
-            reservedWord('metadata'),
+            keyword('metadata'),
             field('key', $.node_object_key),
             '=',
             field('value', $.node_value),
@@ -258,11 +273,11 @@ module.exports = grammar({
             $.false
         ),
 
-        true: $ => reservedWord('true'),
+        true: $ => keyword('true'),
 
-        false: $ => reservedWord('false'),
+        false: $ => keyword('false'),
 
-        null: $ => reservedWord('null'),
+        null: $ => keyword('null'),
 
         // NodeStringValue =
         //     ShapeId / TextBlock / QuotedText
@@ -373,7 +388,7 @@ module.exports = grammar({
         identifier: $ => $._identifier,
 
         _identifier: $ => token(
-            ID
+            /((_+[a-zA-Z0-9])|[a-zA-Z])[a-zA-Z0-9_]*/
         ),
 
         // -------------------------------------------------------------------
@@ -406,7 +421,7 @@ module.exports = grammar({
         // NamespaceStatement =
         //     %s"namespace" SP Namespace BR
         namespace_statement: $ => seq(
-            reservedWord('namespace'),
+            keyword('namespace'),
             $.namespace,
             $._eol
         ),
@@ -414,7 +429,7 @@ module.exports = grammar({
         // UseStatement =
         //     %s"use" SP AbsoluteRootShapeId BR
         _use_statement: $ => seq(
-            reservedWord('use'),
+            keyword('use'),
             $.external_shape_id,
             $._eol
         ),
@@ -490,24 +505,24 @@ module.exports = grammar({
             $.type_timestamp,
         ),
 
-        type_blob: $ => reservedWord('blob'),
-        type_boolean: $ => reservedWord('boolean'),
-        type_document: $ => reservedWord('document'),
-        type_string: $ => reservedWord('string'),
-        type_byte: $ => reservedWord('byte'),
-        type_short: $ => reservedWord('short'),
-        type_integer: $ => reservedWord('integer'),
-        type_long: $ => reservedWord('long'),
-        type_float: $ => reservedWord('float'),
-        type_double: $ => reservedWord('double'),
-        type_big_integer: $ => reservedWord('bigInteger'),
-        type_big_decimal: $ => reservedWord('bigDecimal'),
-        type_timestamp: $ => reservedWord('timestamp'),
+        type_blob: $ => keyword('blob'),
+        type_boolean: $ => keyword('boolean'),
+        type_document: $ => keyword('document'),
+        type_string: $ => keyword('string'),
+        type_byte: $ => keyword('byte'),
+        type_short: $ => keyword('short'),
+        type_integer: $ => keyword('integer'),
+        type_long: $ => keyword('long'),
+        type_float: $ => keyword('float'),
+        type_double: $ => keyword('double'),
+        type_big_integer: $ => keyword('bigInteger'),
+        type_big_decimal: $ => keyword('bigDecimal'),
+        type_timestamp: $ => keyword('timestamp'),
 
         // Mixins =
         //     [SP] %s"with" [WS] "[" 1*([WS] ShapeId) [WS] "]"
         mixins: $ => seq(
-            reservedWord('with'),
+            keyword('with'),
             '[',
             comma_repeat1($.shape_id),
             ']'
@@ -530,9 +545,9 @@ module.exports = grammar({
             field('members', $.enum_members)
         ),
 
-        type_enum: $ => reservedWord('enum'),
+        type_enum: $ => keyword('enum'),
 
-        type_int_enum: $ => reservedWord('intEnum'),
+        type_int_enum: $ => keyword('intEnum'),
 
         // EnumShapeMembers =
         //     "{" [WS] 1*(TraitStatements Identifier [ValueAssignment] [WS]) "}"
@@ -561,7 +576,7 @@ module.exports = grammar({
         // ListStatement =
         //     %s"list" SP Identifier [Mixins] [WS] ListMembers
         list_statement: $ => seq(
-            reservedWord('list'),
+            keyword('list'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             $._list_members),
@@ -582,7 +597,7 @@ module.exports = grammar({
         //     %s"member" [SP] ":" [SP] ShapeId
         list_member: $ => seq(
             field('traits', optional($.applied_traits)),
-            reservedWord('member'),
+            keyword('member'),
             field(
                 'member_type',
                 optional(
@@ -597,7 +612,7 @@ module.exports = grammar({
         // MapStatement =
         //     %s"map" SP Identifier [Mixins] [WS] MapMembers
         map_statement: $ => seq(
-            reservedWord('map'),
+            keyword('map'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             $._map_members
@@ -628,7 +643,7 @@ module.exports = grammar({
         //     %s"key" [SP] ":" [SP] ShapeId
         map_key: $ => seq(
             field('traits', optional($.applied_traits)),
-            reservedWord('key'),
+            keyword('key'),
             field(
                 'key_type',
                 optional(
@@ -648,7 +663,7 @@ module.exports = grammar({
         //     %s"value" [SP] ":" [SP] ShapeId
         map_value: $ => seq(
             field('traits', repeat($.trait)),
-            reservedWord('value'),
+            keyword('value'),
             field(
                 'value_type',
                 optional(
@@ -664,7 +679,7 @@ module.exports = grammar({
         //     %s"structure" SP Identifier [StructureResource]
         //         [Mixins] [WS] StructureMembers
         structure_statement: $ => seq(
-            reservedWord('structure'),
+            keyword('structure'),
             field('name', $.identifier),
             field('resource', optional($.structure_resource)),
             field('mixins', optional($.mixins)),
@@ -674,7 +689,7 @@ module.exports = grammar({
         // StructureResource =
         //     SP %s"for" SP ShapeId
         structure_resource: $ => seq(
-            reservedWord('for'),
+            keyword('for'),
             $.shape_id
         ),
 
@@ -721,7 +736,7 @@ module.exports = grammar({
         // UnionStatement =
         //     %s"union" SP Identifier [Mixins] [WS] UnionMembers
         union_statement: $ => seq(
-            reservedWord('union'),
+            keyword('union'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('members', $.union_members)
@@ -745,7 +760,7 @@ module.exports = grammar({
         // ServiceStatement =
         //     %s"service" SP Identifier [Mixins] [WS] NodeObject
         service_statement: $ => seq(
-            reservedWord('service'),
+            keyword('service'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('members', $.node_object)
@@ -754,7 +769,7 @@ module.exports = grammar({
         // ResourceStatement =
         //     %s"resource" SP Identifier [Mixins] [WS] NodeObject
         resource_statement: $ => seq(
-            reservedWord('resource'),
+            keyword('resource'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('members', $.node_object)
@@ -763,14 +778,14 @@ module.exports = grammar({
         // OperationStatement =
         //     %s"operation" SP Identifier [Mixins] [WS] OperationBody
         operation_statement: $ => seq(
-            reservedWord('operation'),
+            keyword('operation'),
             field('name', $.identifier),
             field('mixins', optional($.mixins)),
             field('body', $.operation_body)
         ),
 
-             // OperationBody =
-             //     "{" [WS]
+        // OperationBody =
+        //     "{" [WS]
         //     *(OperationInput / OperationOutput / OperationErrors)
         //     [WS] "}"
         //     ; only one of each property can be specified.
@@ -793,7 +808,7 @@ module.exports = grammar({
         // OperationInput =
         //     %s"input" [WS] (InlineStructure / (":" [WS] ShapeId)) WS
         operation_input: $ => seq(
-            reservedWord('input'),
+            keyword('input'),
             field(
                 'type',
                 choice(
@@ -809,7 +824,7 @@ module.exports = grammar({
         // OperationOutput =
         //     %s"output" [WS] (InlineStructure / (":" [WS] ShapeId)) WS
         operation_output: $ => seq(
-            reservedWord('output'),
+            keyword('output'),
             field(
                 'type',
                 choice(
@@ -825,7 +840,7 @@ module.exports = grammar({
         // OperationErrors =
         //     %s"errors" [WS] ":" [WS] "[" *([WS] Identifier) [WS] "]" WS
         operation_errors: $ => seq(
-            reservedWord('errors'),
+            keyword('errors'),
             ':',
             '[',
             comma_repeat($.identifier),
@@ -897,7 +912,7 @@ module.exports = grammar({
         // ApplyStatementBlock =
         //     %s"apply" SP ShapeId WS "{" TraitStatements "}"
         apply_statement: $ => seq(
-            reservedWord('apply'),
+            keyword('apply'),
             field('target', $.shape_id),
             field(
                 'traits',
@@ -912,4 +927,4 @@ module.exports = grammar({
             )
         ),
     }
-         });
+});

@@ -10,22 +10,31 @@
   ],
   "author": "Simon Johnston <johnstonskj@gmail.com>",
   "license": "MIT",
-  "dependencies": {
-    "nan": "^2.17.0"
-  },
-  "devDependencies": {
-    "tree-sitter-cli": "^0.20.8"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/johnstonskj/tree-sitter-smithy"
+  },
+  "dependencies": {
+    "nan": "^2.17.0",
+    "node-gyp": "^7.1.2"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.20.8",
+    "web-tree-sitter": "^0.20.8"
+  },
+  "scripts": {
+    "test": "make test"
   },
   "tree-sitter": [
     {
       "scope": "source.smithy",
       "file-types": [
         "smithy"
-      ]
+      ],
+      "highlights": [
+        "queries/highlights.scm"
+      ],
+      "injection-regex": "^smithy$"
     }
   ]
 }
