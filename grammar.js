@@ -24,17 +24,7 @@ const PREC_COMMENT = 0
  * A case-insensitive keyword (copied from VHDL grammar)
  */
 function keyword(word) {
-    // word ||  // when debugging conflict error msgs
     return alias(kw_from_regex(kw_make_regex(word)), word);
-}
-
-function kw_operator(str) {
-    return token(
-        prec(
-            PREC_OPERATOR,
-            str
-        )
-    );
 }
 
 function kw_from_regex(regex) {
@@ -50,6 +40,15 @@ function kw_make_regex(word) {
     return word.split('')
         .map(letter => `[${letter}${letter.toUpperCase()}]`)
         .join('');
+}
+
+function kw_operator(str) {
+    return token(
+        prec(
+            PREC_OPERATOR,
+            str
+        )
+    );
 }
 
 function seq_comma(rule) {

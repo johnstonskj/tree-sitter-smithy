@@ -10,14 +10,95 @@ This repository contains a [[https://github.com/tree-sitter/tree-sitter][tree-si
 
 ** Keywords
 
-- case-insensitive
-- not reserved
+Keywords in Smithy have two characteristics that make a naïve translation of the ABNF grammar problematic. Firstly, all
+keywords are case-insensitive denoted in the Smithy grammar with the =%s""= string format. Secondly, while keywords are
+reserved, they are only reserved in a given context.
+
+*** Case-Insensitivity
+
+#+NAME: keywords-case-insensitive
+#+CAPTION: Case-Insensitive Keyword Functions
+#+BEGIN_EXAMPLE js
+function keyword(word) {
+    return alias(kw_from_regex(kw_make_regex(word)), word);
+}
+
+function kw_from_regex(regex) {
+    return token(prec(PREC_RESERVED, new RegExp(regex)));
+}
+
+function kw_make_regex(word) {
+    return word.split('')
+        .map(letter => `[${letter}${letter.toUpperCase()}]`)
+        .join('');
+}
+#+END_EXAMPLE
+
+
+*** Context-Sensitivity
+
+#+BEGIN_EXAMPLE
+metadata_statement: $ => seq(
+    keyword('metadata'),
+    field('key', $.node_object_key),
+    '=',
+    field('value', $.node_value),
+    $._eol
+),
+#+END_EXAMPLE
+
 
 ** Whitespace
 
-The grammar corresponds to the version 2.0 Smithy model, it allows for comma-separation in places as per the 2.0
-migration path from the earlier versions that required commas. However, rather than making whitespace explicit in
-the way that Smithy's ABNF does we use the ~comma_repeat~ and ~comma_repeat1~ functions to wrap a rule into such a list.
+Smithy's definition handles all whitespace explicitly with a number of rules:
+
+- =[SP]= :: one or more spaces or tabs; =1*(%x20 / %x09)=
+- =[NL]= :: newlines; =Newline: \n and \r\n=
+- =[WS]= :: spaces, newlines, comments, and commas; =Newline: \n and \r\n=
+- =[BR]= :: a line break followed by whitespace; =[SP] 1*(Comment / NL) [WS]=
+
+*** Spaces
+
+#+BEGIN_EXAMPLE
+extras: $ => [
+    /\s/
+],
+#+END_EXAMPLE
+
+
+*** End-of-line handling
+
+As we saw in the preceding section ...
+
+#+BEGIN_EXAMPLE
+_eol: $ => token(
+    prec(
+        PREC_EOL,
+        /(\n|\r\n)+/
+    )
+),
+#+END_EXAMPLE
+
+We use this rule to terminate the following rules: ~control_statement~, ~metadata_statement~, ~_text_block~,
+~namespace_statement~, ~_use_statement~, and ~shape_statements~.
+
+
+*** Comments
+
+#+BEGIN_EXAMPLE
+extras: $ => [
+    /\s/,
+    $.documentation_comment,
+    $.line_comment
+],
+#+END_EXAMPLE
+
+
+*** Commas
+
+The grammar corresponds to the version 2.0 Smithy model, it allows for comma-separation in some places as a migration
+path from the earlier versions that required commas. However, rather than making whitespace explicit in the way that
+Smithy's ABNF does we use the ~comma_repeat~ and ~comma_repeat1~ functions to wrap a rule into such a list.
 
 #+NAME: comma-separated-lists
 #+CAPTION: Comma-Separated List Functions
@@ -27,9 +108,7 @@ function seq_comma(rule) {
 }
 
 function comma_repeat1(rule) {
-    return seq(
-        seq_comma(rule),
-        repeat(seq_comma(rule))
+    return seq(seq_comma(rule), repeat(seq_comma(rule))
     );
 }
 
@@ -38,11 +117,8 @@ function comma_repeat(rule) {
 }
 #+END_EXAMPLE
 
-** End-of-line handling
 
-"[BR]" vs "$._eol"
-
-** Missing OperationBody traits
+** Missing =OperationBody= traits
 
 This translation did uncover one issue, while traits are heavily used on the members of an =operation= the corresponding
 =OperationBody= production does not allow for Traits.
@@ -74,6 +150,7 @@ OperationBodyItem =
     (OperationInput / OperationOutput / OperationErrors)
 #+END_EXAMPLE
 
+
 * Queries
 
 If you want to understand how to query the model, check out the tests in =tests/corpus=, or in the following files in
@@ -83,6 +160,11 @@ If you want to understand how to query the model, check out the tests in =tests/
 - =tags= :: the set of queries to extract tags from a source file.
 - =folds= :: a small set of queries to allow for code folding of shapes.
 - =lint= :: the beginnings of lint rules described as queries
+
+** Folding
+
+Only /shape/ statements and /apply/ statements are enabled for folding.
+
 
 ** Highlighting
 
@@ -105,6 +187,15 @@ If you want to understand how to query the model, check out the tests in =tests/
 - =@variable= :: object value keys and shape member names.
 - =@attribute= :: trait names when applied to a shape.
 
+  
+** Indentation
+
+TBD
+
+
+** Lint
+
+
 ** Tags
 
 - =@name= :: object value keys, enum variants, shape member names.
@@ -112,13 +203,8 @@ If you want to understand how to query the model, check out the tests in =tests/
   member types
 - =@definition.type= :: all shape names.
 
-** Folding
-
-Only /shape/ statements and /apply/ statements are enabled for folding.
-
-** Lint
-
 TBD
+
 
 * Using
 
@@ -199,6 +285,7 @@ Plug 'nvim-treesitter/playground'
 
 call plug#end()
 #+END_EXAMPLE
+
 
 * More Work
 

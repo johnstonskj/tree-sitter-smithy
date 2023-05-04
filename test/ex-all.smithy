@@ -39,7 +39,7 @@ enum SomeEnumeration {
     TWO
 }
 
-map IntegerMap {
+map IntegercwHash {
     key: StringKey
     value: IntegerValue
 }
