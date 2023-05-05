@@ -15,15 +15,18 @@
     "url": "https://github.com/johnstonskj/tree-sitter-smithy"
   },
   "dependencies": {
-    "nan": "^2.17.0",
-    "node-gyp": "^7.1.2"
+    "nan": "^2.17.0"
   },
   "devDependencies": {
-    "tree-sitter-cli": "^0.20.8",
-    "web-tree-sitter": "^0.20.8"
+    "node-gyp": "^9.3.1",
+    "tree-sitter-cli": "^0.20.8"
   },
   "scripts": {
-    "test": "make test"
+    "install": "make install",
+    "build": "make parser_dylib",
+    "build-bindings": "make bindings",
+    "test": "make test_grammar",
+    "clean": "make clean"
   },
   "tree-sitter": [
     {
@@ -31,8 +34,29 @@
       "file-types": [
         "smithy"
       ],
+      "folds": [
+        "queries/folds.scm",
+        "node_modules/tree-sitter-smithy/queries/folds.scm"
+      ],
       "highlights": [
-        "queries/highlights.scm"
+        "queries/highlights.scm",
+        "node_modules/tree-sitter-smithy/queries/highlights.scm"
+      ],
+      "indent": [
+        "queries/highlights.scm",
+        "node_modules/tree-sitter-smithy/queries/indent.scm"
+      ],
+      "injections": [
+        "queries/injections.scm",
+        "node_modules/tree-sitter-smithy/queries/injections.scm"
+      ],
+      "lint": [
+        "queries/lint.scm",
+        "node_modules/tree-sitter-smithy/queries/lint.scm"
+      ],
+      "tags": [
+        "queries/tags.scm",
+        "node_modules/tree-sitter-smithy/queries/tags.scm"
       ],
       "injection-regex": "^smithy$"
     }

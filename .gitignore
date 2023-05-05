@@ -183,4 +183,11 @@ Cargo.lock
 # Generated for the playground
 /tree-sitter-*.wasm
 
+### Node ###
+
+package-lock.json
+
+node_modules
+
 /build/
+

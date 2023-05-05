@@ -14,7 +14,7 @@
 ;; Rule: Shape identifiers (references) *must not* start with a lower case letter.
 ((shape_id
   shape_id: (identifier) @name)
- (#match? @variant "^[a-z]"))
+ (#match? @name "^[a-z]"))
 
 ;; Rule: Shape identifiers (statements) *must not* start with a lower case letter.
 ((enum_member
