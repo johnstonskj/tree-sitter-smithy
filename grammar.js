@@ -14,38 +14,15 @@
 //
 // -------------------------------------------------------------------
 
-const PREC_RESERVED = 2
-const PREC_OPERATOR = 2
+const PREC_KEYWORD = 2
 const PREC_BINDING = 1
 const PREC_EOL = 0
 const PREC_COMMENT = 0
 
-/**
- * A case-insensitive keyword (copied from VHDL grammar)
- */
-function keyword(word) {
-    return alias(kw_from_regex(kw_make_regex(word)), word);
-}
-
-function kw_from_regex(regex) {
+function keyword(str) {
     return token(
         prec(
-            PREC_RESERVED,
-            new RegExp(regex)
-        )
-    );
-}
-
-function kw_make_regex(word) {
-    return word.split('')
-        .map(letter => `[${letter}${letter.toUpperCase()}]`)
-        .join('');
-}
-
-function kw_operator(str) {
-    return token(
-        prec(
-            PREC_OPERATOR,
+            PREC_KEYWORD,
             str
         )
     );
@@ -268,13 +245,9 @@ module.exports = grammar({
         // NodeKeywords =
         //     %s"true" / %s"false" / %s"null"
         boolean: $ => choice(
-            $.true,
-            $.false
+            keyword('true'),
+            keyword('false')
         ),
-
-        true: $ => keyword('true'),
-
-        false: $ => keyword('false'),
 
         null: $ => keyword('null'),
 
@@ -420,7 +393,7 @@ module.exports = grammar({
         // NamespaceStatement =
         //     %s"namespace" SP Namespace BR
         namespace_statement: $ => seq(
-            keyword('namespace'),
+            keyword("namespace"),
             $.namespace,
             $._eol
         ),
@@ -428,7 +401,7 @@ module.exports = grammar({
         // UseStatement =
         //     %s"use" SP AbsoluteRootShapeId BR
         _use_statement: $ => seq(
-            keyword('use'),
+            keyword("use"),
             $.external_shape_id,
             $._eol
         ),
@@ -478,7 +451,7 @@ module.exports = grammar({
         // SimpleShapeStatement =
         //     SimpleTypeName SP Identifier [Mixins]
         simple_shape_statement: $ => seq(
-            field('type', $._simple_type),
+            field('type', $.simple_type_name),
             field('name', $.identifier),
             field('mixins', optional($.mixins))
         ),
@@ -488,35 +461,21 @@ module.exports = grammar({
         //     / %s"byte" / %s"short" / %s"integer" / %s"long"
         //     / %s"float" / %s"double" / %s"bigInteger"
         //     / %s"bigDecimal" / %s"timestamp"
-        _simple_type: $ => choice(
-            $.type_blob,
-            $.type_boolean,
-            $.type_document,
-            $.type_string,
-            $.type_byte,
-            $.type_short,
-            $.type_integer,
-            $.type_long,
-            $.type_float,
-            $.type_double,
-            $.type_big_integer,
-            $.type_big_decimal,
-            $.type_timestamp,
+        simple_type_name: $ => choice(
+            keyword('blob'),
+            keyword('boolean'),
+            keyword('document'),
+            keyword('string'),
+            keyword('byte'),
+            keyword('short'),
+            keyword('integer'),
+            keyword('long'),
+            keyword('float'),
+            keyword('double'),
+            keyword('big_integer'),
+            keyword('big_decimal'),
+            keyword('timestamp')
         ),
-
-        type_blob: $ => keyword('blob'),
-        type_boolean: $ => keyword('boolean'),
-        type_document: $ => keyword('document'),
-        type_string: $ => keyword('string'),
-        type_byte: $ => keyword('byte'),
-        type_short: $ => keyword('short'),
-        type_integer: $ => keyword('integer'),
-        type_long: $ => keyword('long'),
-        type_float: $ => keyword('float'),
-        type_double: $ => keyword('double'),
-        type_big_integer: $ => keyword('bigInteger'),
-        type_big_decimal: $ => keyword('bigDecimal'),
-        type_timestamp: $ => keyword('timestamp'),
 
         // Mixins =
         //     [SP] %s"with" [WS] "[" 1*([WS] ShapeId) [WS] "]"

@@ -31,6 +31,6 @@ integer OneToTen
                 value: (node_value
                   (number))))))
         body: (simple_shape_statement
-          type: (type_integer)
+          type: (simple_type_name)
           name: (identifier))))))
 

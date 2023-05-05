@@ -144,8 +144,7 @@
 ;; Constant Values
 ;; ---------------------------------------------------------------------------
 
-(true) @constant.builtin
-(false) @constant.builtin
+(boolean) @constant.builtin
 (null) @constant.builtin
 
 ;; ---------------------------------------------------------------------------

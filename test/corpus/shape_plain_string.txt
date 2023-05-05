@@ -16,5 +16,5 @@ string MyString
      shapes: (shape_statements
        (shape_statement
          body: (simple_shape_statement
-           type: (type_string)
+           type: (simple_type_name)
            name: (identifier))))))

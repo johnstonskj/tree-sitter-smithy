@@ -4,80 +4,89 @@
 #+LANGUAGE: en
 #+STARTUP: overview hidestars inlineimages entitiespretty
 
-This repository contains a [[https://github.com/tree-sitter/tree-sitter][tree-sitter]] grammar for the [[https://smithy.io/2.0/index.html][Smithy]] /language for defining services and SDKs/.
+This repository contains a [[https://github.com/tree-sitter/tree-sitter][tree-sitter]] grammar for the [[https://smithy.io/2.0/index.html][Smithy]] /language for defining services and SDKs/. 
 
 * Grammar
 
+The following are notes on some of the peculiarities of the Smithy grammar and any obvious deviations between Smithy's
+ABNF and the tree-sitter grammar in =grammar.js=.
+
 ** Keywords
 
-Keywords in Smithy have two characteristics that make a naïve translation of the ABNF grammar problematic. Firstly, all
-keywords are case-insensitive denoted in the Smithy grammar with the =%s""= string format. Secondly, while keywords are
-reserved, they are only reserved in a given context.
+In the majority of programming languages keywords are also reserved, in which case a keyword may not be an identifier in
+other contexts. For example, the following is illegal in Rust as both =struct= and =mod= are reserved keywords.
 
-*** Case-Insensitivity
-
-#+NAME: keywords-case-insensitive
-#+CAPTION: Case-Insensitive Keyword Functions
-#+BEGIN_EXAMPLE js
-function keyword(word) {
-    return alias(kw_from_regex(kw_make_regex(word)), word);
+#+BEGIN_SRC rust
+struct SomeExample {
+    struct: String,
+    mod: u16,
 }
+#+END_SRC
 
-function kw_from_regex(regex) {
-    return token(prec(PREC_RESERVED, new RegExp(regex)));
-}
+In Smithy, keywords are not reserved, which makes sense for an IDL as you don't know what may be reserved words in any
+target language. For example, a metadata statement in Smithy starts with the keyword =metadata= but does not reserve this
+keyword against use as a structure key. To accomplish this all keywords become defined in their respective location
+rather than in a global list as seen in other tree-sitter grammars.
 
-function kw_make_regex(word) {
-    return word.split('')
-        .map(letter => `[${letter}${letter.toUpperCase()}]`)
-        .join('');
-}
-#+END_EXAMPLE
-
-
-*** Context-Sensitivity
-
-#+BEGIN_EXAMPLE
+#+BEGIN_SRC js
 metadata_statement: $ => seq(
     keyword('metadata'),
     field('key', $.node_object_key),
     '=',
-    field('value', $.node_value),
-    $._eol
+    field('value', $.node_value)
 ),
-#+END_EXAMPLE
+#+END_SRC
 
 
 ** Whitespace
 
 Smithy's definition handles all whitespace explicitly with a number of rules:
 
-- =[SP]= :: one or more spaces or tabs; =1*(%x20 / %x09)=
-- =[NL]= :: newlines; =Newline: \n and \r\n=
-- =[WS]= :: spaces, newlines, comments, and commas; =Newline: \n and \r\n=
-- =[BR]= :: a line break followed by whitespace; =[SP] 1*(Comment / NL) [WS]=
+| Rule | Definition                  | Description                            |
+|------+-----------------------------+----------------------------------------|
+| =SP=   | =1*(%x20 / %x09)=             | one or more spaces or tabs             |
+| =NL=   | =%x0A / %x0D.0A=              | newlines                               |
+| =WS=   | =1*(SP / NL / Comment / ",")= | spaces, newlines, comments, and commas |
+| =BR=   | =[SP] 1*(Comment / NL) [WS]=  | a line break followed by whitespace    |
+
+These rules are then included in non-terminals so that the simple spaces in =SP= are differentiated from more complex
+rules such as =WS= and =BR=.
+
+#+BEGIN_EXAMPLE
+MetadataStatement =
+    %s"metadata" SP NodeObjectKey [SP] "=" [SP] NodeValue BR
+#+END_EXAMPLE
+
+The following sections describe how these have translated into the tree-sitter grammar.
 
 *** Spaces
 
-#+BEGIN_EXAMPLE
+While Smithy includes a number of separate whitespace rules they don't cover a number of common characters. For example,
+while =SP= includes the horizontal tab =\t= but not the vertical tab =\v= or form feed =\f=. This grammar chooses to use the
+regular expression character class =\s= which includes the following values, including all Unicode whitespace.
+
+#+BEGIN_SRC js
+/[\f\n\r\t\v\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/
+#+END_SRC
+
+Tree-sitter has a specific mechanism to specify rules that can occur anywhere, in the ~extras~ key, as shown below.
+
+#+BEGIN_SRC js
 extras: $ => [
     /\s/
 ],
-#+END_EXAMPLE
+#+END_SRC
 
 
 *** End-of-line handling
 
-As we saw in the preceding section ...
-
-#+BEGIN_EXAMPLE
-_eol: $ => token(
-    prec(
-        PREC_EOL,
-        /(\n|\r\n)+/
-    )
-),
-#+END_EXAMPLE
+The =BR= rule ensures that some rules, such as the metadata statement above, end with the end of the line. The expansion
+of the =BR= rule includes both =NL= /and/ =Comment= given that comments are also line-terminated. To get the same result we
+include an explicit, but hidden, rule names =_eol=.
+ 
+#+BEGIN_SRC js
+_eol: $ => token(prec(PREC_EOL, /(\n|\r\n)+/)),
+#+END_SRC
 
 We use this rule to terminate the following rules: ~control_statement~, ~metadata_statement~, ~_text_block~,
 ~namespace_statement~, ~_use_statement~, and ~shape_statements~.
@@ -85,13 +94,17 @@ We use this rule to terminate the following rules: ~control_statement~, ~metadat
 
 *** Comments
 
-#+BEGIN_EXAMPLE
+Given that we wish to process comments we want to be able to address them as a rule, however we don't want to have to
+explicitly allow them in all whitespace rules, as per the Smithy specification. Luckily the ~extras~ key introduced above
+allows for this, resulting in the following.
+
+#+BEGIN_SRC js
 extras: $ => [
     /\s/,
     $.documentation_comment,
     $.line_comment
 ],
-#+END_EXAMPLE
+#+END_SRC
 
 
 *** Commas
@@ -102,7 +115,7 @@ Smithy's ABNF does we use the ~comma_repeat~ and ~comma_repeat1~ functions to wr
 
 #+NAME: comma-separated-lists
 #+CAPTION: Comma-Separated List Functions
-#+BEGIN_EXAMPLE js
+#+BEGIN_SRC js
 function seq_comma(rule) {
     return seq(rule, optional(','));
 }
@@ -115,7 +128,7 @@ function comma_repeat1(rule) {
 function comma_repeat(rule) {
     return optional(comma_repeat1(rule));
 }
-#+END_EXAMPLE
+#+END_SRC
 
 
 ** Missing =OperationBody= traits
@@ -157,35 +170,40 @@ If you want to understand how to query the model, check out the tests in =tests/
 =queries=.
 
 - =highlights= :: the set of queries and mapping to allow for syntax highlighting.
-- =tags= :: the set of queries to extract tags from a source file.
 - =folds= :: a small set of queries to allow for code folding of shapes.
 - =lint= :: the beginnings of lint rules described as queries
+- =tags= :: the set of queries to extract tags from a source file.
 
 ** Folding
 
-Only /shape/ statements and /apply/ statements are enabled for folding.
+The file =folds.scm= describes the nodes that support folding; currently, only /shape/ statements and /apply/ statements.
 
 
 ** Highlighting
 
+The file =highlights.scm= assigns highlight styles to Smithy source in the following manner.
+
 - =@comment= :: line and documentation comments.
-- =@keyword= :: =apply=, =errors=, =for=, =input=, =key=, =list=, =map=, =member=, =metadata=, =namespace=, =operation=, =output=, =resource=,
+- =@keyword= :: =$=, apply=, =errors=, =for=, =input=, =key=, =list=, =map=, =member=, =metadata=, =namespace=, =operation=, =output=, =resource=,
   =service=, =structure=, =union=, =use=, =value=, =with=
-- =@punctuation.bracket= :: =(=, =)=, =[=, =]=, ={=, =}=
+- =@keyword.simple_type= :: =bigDecimal=, =bigInteger=, =blob=, =boolean=, =byte=, =document=, =double=,
+  =enum=, =float=, =intEnum=, =integer=, =long=, =short=, =string=, =timestamp=
+- =@keyword.aggregate_type= :: =list=, =map=, =structure=, =union=
+- =@keyword.service_type= :: =operation=, =resource=, =service=
 - =@number= :: numeric literals.
 - =@string= :: string literals, quoted strings and text blocks.
 - =@constant.builtin= :: =true=, =false=, =null=
 - =@module= :: the value of a =namespace= statement.
 - =@type.definition= :: all shape names.
-- =@keyword.simple_type= :: all simple shape identifiers: =bigDecimal=, =bigInteger=, =blob=, =boolean=, =byte=, =document=, =double=,
-  =enum=, =float=, =intEnum=, =integer=, =long=, =short=, =string=, =timestamp=
-- =@keyword.aggregate_type= :: all aggregate shape identifiers: =list=, =map=, =structure=, =union=
-- =@keyword.service_type= :: all service shape identifiers: =operation=, =resource=, =service=
-- =@constructor= :: enumeration variants
 - =@type= :: =use=-ed shape identifiers, values of type =ShapeID=, mixin references, structure resource references,  structure
   member types
 - =@variable= :: object value keys and shape member names.
+- =@constructor= :: enumeration variants
 - =@attribute= :: trait names when applied to a shape.
+- =@punctuation.bracket= :: ='('=, =')'=, ='['=, =']'=, ='{'=, ='}'=
+- =@punctuation.delimiter= :: =','=, =':'=
+- =@operator= :: ='​='= in metadata statements, ='​='= in value assignments, =':​='= defining inline structures in operations
+- =@error= :: any ~(ERROR)~ node in the tree
 
   
 ** Indentation
@@ -195,40 +213,98 @@ TBD
 
 ** Lint
 
+The file =lint.scm= contains a set of rules, each of which will select nodes that break some rule. For example, one rule
+selects all operations statement names that do not follow the Smithy naming /conventions/.
+
+#+BEGIN_SRC scheme
+(operation_statement
+ name: (identifier) @name
+ (#not-match? @name "^(Batch)?(Create|Get|List|Put|Update|Delete).*$"))
+#+END_SRC
+
+The queries implement the following rules:
+
+- Preamble rules:
+  - Version number *should* be "2".
+- Type names:
+  - Shape identifiers (references) *must not* start with a lower case letter.
+  - Shape identifiers (statements) *must not* start with a lower case letter.
+- Member names:
+  - Object keys *must not* start with an upper case letter.
+  - Structure member identifiers *must not* start with an upper case letter.
+  - Shape ID member identifiers *must not* start with an upper case letter.
+- Enum variants:
+  - Variant (enum members) identifiers *must* be all upper case.
+- Additional Naming:
+  - List types *should* end with the string "List".
+  - Map types *should* end with the string "Map" or "Mapping".
+  - Operations *should* follow a functional naming convention.
+  - Operation input structures *should* follow a functional naming - convention.
+  - Operation output structures *should* follow a functional naming convention.
+- Traits:
+  - Applied trait identifiers *must not* start with an upper case letter.
+- Other:
+  - All shapes *should* have documentation comments
+
 
 ** Tags
 
-- =@name= :: object value keys, enum variants, shape member names.
+The file =tags.scm= extracts tags from a Smithy file assigning them the following classes.
+
+- =@name= :: object value keys, enum variants, shape member identifiers.
+- =@definition.type= :: all shape identifiers.
 - =@reference.type= :: use=-ed shape identifiers, values of type =ShapeID=, mixin references, structure resource references,  structure
-  member types
-- =@definition.type= :: all shape names.
-
-TBD
+  member types.
+- =@reference.trait= :: applied trait identifiers.
 
 
-* Using
+* Using the grammar
 
 ** Neovim
 
-[[https://neovim.io/][Neovim]] has some great tree-sitter support with the [[https://github.com/nvim-treesitter/nvim-treesitter][nvim-tree-sitter]] and a nice in-editor [[https://github.com/nvim-treesitter/playground][playground]]. 
+[[https://neovim.io/][Neovim]] has some great tree-sitter support with the [[https://github.com/nvim-treesitter/nvim-treesitter][nvim-tree-sitter]] and a nice in-editor [[https://github.com/nvim-treesitter/playground][playground]]. Figure
+[[fig:nvim-screenshot]] shows a Neovim session with a highlighted, and folded, Smithy file along with the tree-sitter
+playground providing the tree view and query editor.
 
-#+BEGIN_EXAMPLE: vim
+#+CAPTION: Neovim with Smithy
+#+NAME: fig:nvim-screenshot
+#+ATTR_HTML: :align center :width 80% :height 80%                                                                                                                         
+[[./nvim-screenshot.png]]
+
+Firstly, add the tree-sitter plugin, but don't install yet, as shown on the nvim-treesitter page (using [[https://github.com/junegunn/vim-plug][vim-plug]]):
+
+#+BEGIN_SRC vimrc-mode
 call plug#begin()
 
-Plug 'nvim-treesitter/nvim-treesitter'
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 
 call plug#end()
-#+END_EXAMPLE
+#+END_SRC
 
-#+BEGIN_EXAMPLE: lua
+Now, add the following Lua block, using content from the homepage, and then set the ~ensure_installed~ to include the
+query language and so highlight tree-sitter queries and set ~ignore_install~ to include smithy *before* installing the
+tree-sitter plugin. The builtin smithy grammar will unfortunately install queries that will then be a problem so we want
+to avoid that.
+
+#+BEGIN_SRC lua
 require'nvim-treesitter.configs'.setup {
     ensure_installed = { "query" }, 
     ignore_install = { "smithy" },
+    sync_install = false,
+    auto_install = true,
     highlight = {
-        // ...
+        enable = true,
+        disable = {},
+        additional_vim_regex_highlighting = false,
     },
     incremental_selection = {
-        // ...
+        enable = true,
+        keymaps = {
+            init_selection = "gnn",
+            node_incremental = "grn",
+            scope_incremental = "grc",
+            node_decremental = "grm",
+        },
     },
     indent = {
         enable = true
@@ -238,28 +314,19 @@ require'nvim-treesitter.configs'.setup {
         use_virtual_text = true,
         lint_events = {"BufWrite", "CursorHold"},
     },
-    playground = {
-        enable = true,
-        // ...
-    }
 }
-#+END_EXAMPLE
-
-- ~ensure_installed~ :: 
-- ~ignore_install~ :: remove the builtin smithy grammar.
-- ~playground~ :: obviously enable the playground!
-
-For the rest of the config replace "=// ...=" with the defaults from the tree-sitter and playground documentation.
+#+END_SRC
 
 To allow tree-sitter to do folding based on =folds.scm=, add the following to =init.vim=.
 
-#+BEGIN_EXAMPLE: vimfiles
+#+BEGIN_SRC vimrc-mode
 set foldmethod=expr
 set foldexpr=nvim_treesitter#foldexpr()
-#+END_EXAMPLE
+#+END_SRC
 
+Once the core plugin has been installed you can add the following Lua block in =init.vim= to install /this/ grammar.
 
-#+BEGIN_EXAMPLE: lua
+#+BEGIN_SRC lua
 local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
 
 parser_config.smithy = {
@@ -272,19 +339,45 @@ parser_config.smithy = {
     filetype = "smithy",
     maintainers = { "@johnstonskj" },
 }
-#+END_EXAMPLE
+#+END_SRC
 
 Additionally, try the  [[https://github.com/nvim-treesitter/nvim-treesitter-context][nvim-treesitter-context]] and [[https://github.com/nvim-treesitter/nvim-treesitter-refactor][nvim-treesitter-refactor]] plugins based on tree-sitter.
 
-#+BEGIN_EXAMPLE: vim
+#+BEGIN_SRC vimrc-mode
 call plug#begin()
 
-Plug 'nvim-treesitter/nvim-treesitter'
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 Plug 'nvim-treesitter/nvim-treesitter-context' 
 Plug 'nvim-treesitter/playground'
 
 call plug#end()
-#+END_EXAMPLE
+#+END_SRC
+
+Add the corresponding configuration:
+
+#+BEGIN_SRC lua
+require'nvim-treesitter.configs'.setup {
+    // …
+    playground = {
+        enable = true,
+        disable = {},
+        updatetime = 25,
+        persist_queries = false,
+        keybindings = {
+            toggle_query_editor = 'o',
+            toggle_hl_groups = 'i',
+            toggle_injected_languages = 't',
+            toggle_anonymous_nodes = 'a',
+            toggle_language_display = 'I',
+            focus_language = 'f',
+            unfocus_language = 'F',
+            update = 'R',
+            goto_node = '<cr>',
+            show_help = '?',
+        },
+    }
+}
+#+END_SRC
 
 
 * More Work
