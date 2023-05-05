@@ -16,7 +16,8 @@ ABNF and the tree-sitter grammar in =grammar.js=.
 In the majority of programming languages keywords are also reserved, in which case a keyword may not be an identifier in
 other contexts. For example, the following is illegal in Rust as both =struct= and =mod= are reserved keywords.
 
-#+BEGIN_SRC rust
+#+NAME: lst:rust-keyword-example
+#+BEGIN_SRC rust :noeval
 struct SomeExample {
     struct: String,
     mod: u16,
@@ -28,7 +29,8 @@ target language. For example, a metadata statement in Smithy starts with the key
 keyword against use as a structure key. To accomplish this all keywords become defined in their respective location
 rather than in a global list as seen in other tree-sitter grammars.
 
-#+BEGIN_SRC js
+#+NAME: lst:grammar-metadata-statement
+#+BEGIN_SRC js :noeval
 metadata_statement: $ => seq(
     keyword('metadata'),
     field('key', $.node_object_key),
@@ -52,6 +54,7 @@ Smithy's definition handles all whitespace explicitly with a number of rules:
 These rules are then included in non-terminals so that the simple spaces in =SP= are differentiated from more complex
 rules such as =WS= and =BR=.
 
+#+NAME: lst:smithy-metadata-statement
 #+BEGIN_EXAMPLE
 MetadataStatement =
     %s"metadata" SP NodeObjectKey [SP] "=" [SP] NodeValue BR
@@ -65,13 +68,15 @@ While Smithy includes a number of separate whitespace rules they don't cover a n
 while =SP= includes the horizontal tab =\t= but not the vertical tab =\v= or form feed =\f=. This grammar chooses to use the
 regular expression character class =\s= which includes the following values, including all Unicode whitespace.
 
-#+BEGIN_SRC js
+#+NAME: lst:regex-whitespace
+#+BEGIN_SRC js :noeval
 /[\f\n\r\t\v\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/
 #+END_SRC
 
 Tree-sitter has a specific mechanism to specify rules that can occur anywhere, in the ~extras~ key, as shown below.
 
-#+BEGIN_SRC js
+#+NAME: lst:grammar-extras-whitespace
+#+BEGIN_SRC js :noeval
 extras: $ => [
     /\s/
 ],
@@ -83,8 +88,9 @@ extras: $ => [
 The =BR= rule ensures that some rules, such as the metadata statement above, end with the end of the line. The expansion
 of the =BR= rule includes both =NL= /and/ =Comment= given that comments are also line-terminated. To get the same result we
 include an explicit, but hidden, rule names =_eol=.
- 
-#+BEGIN_SRC js
+
+#+NAME: lst:grammar-eol
+#+BEGIN_SRC js :noeval
 _eol: $ => token(prec(PREC_EOL, /(\n|\r\n)+/)),
 #+END_SRC
 
@@ -98,7 +104,8 @@ Given that we wish to process comments we want to be able to address them as a r
 explicitly allow them in all whitespace rules, as per the Smithy specification. Luckily the ~extras~ key introduced above
 allows for this, resulting in the following.
 
-#+BEGIN_SRC js
+#+NAME: lst:grammar-extras-comments
+#+BEGIN_SRC js :noeval
 extras: $ => [
     /\s/,
     $.documentation_comment,
@@ -113,9 +120,8 @@ The grammar corresponds to the version 2.0 Smithy model, it allows for comma-sep
 path from the earlier versions that required commas. However, rather than making whitespace explicit in the way that
 Smithy's ABNF does we use the ~comma_repeat~ and ~comma_repeat1~ functions to wrap a rule into such a list.
 
-#+NAME: comma-separated-lists
-#+CAPTION: Comma-Separated List Functions
-#+BEGIN_SRC js
+#+NAME: lst:comma-separated-lists
+#+BEGIN_SRC js :noeval
 function seq_comma(rule) {
     return seq(rule, optional(','));
 }
@@ -136,6 +142,7 @@ function comma_repeat(rule) {
 This translation did uncover one issue, while traits are heavily used on the members of an =operation= the corresponding
 =OperationBody= production does not allow for Traits.
 
+#+NAME: lst:smithy-operation-statement
 #+BEGIN_EXAMPLE
 OperationStatement =
     %s"operation" SP Identifier [Mixins] [WS] OperationBody
@@ -152,6 +159,7 @@ OperationInput =
 
 It might end up something like this:
 
+#+NAME: lst:smithy-new-operation-body
 #+BEGIN_EXAMPLE
 OperationBody =
     "{" [WS]
@@ -216,7 +224,8 @@ TBD
 The file =lint.scm= contains a set of rules, each of which will select nodes that break some rule. For example, one rule
 selects all operations statement names that do not follow the Smithy naming /conventions/.
 
-#+BEGIN_SRC scheme
+#+NAME: lst:lint-query-example
+#+BEGIN_SRC emacs-lisp :noeval
 (operation_statement
  name: (identifier) @name
  (#not-match? @name "^(Batch)?(Create|Get|List|Put|Update|Delete).*$"))
@@ -273,7 +282,8 @@ playground providing the tree view and query editor.
 
 Firstly, add the tree-sitter plugin, but don't install yet, as shown on the nvim-treesitter page (using [[https://github.com/junegunn/vim-plug][vim-plug]]):
 
-#+BEGIN_SRC vimrc-mode
+#+NAME: lst:vim-ts-plugin
+#+BEGIN_SRC vimrc-mode :noeval
 call plug#begin()
 
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
@@ -286,7 +296,8 @@ query language and so highlight tree-sitter queries and set ~ignore_install~ to 
 tree-sitter plugin. The builtin smithy grammar will unfortunately install queries that will then be a problem so we want
 to avoid that.
 
-#+BEGIN_SRC lua
+#+NAME: lst:vim-ts-config
+#+BEGIN_SRC lua :noeval
 require'nvim-treesitter.configs'.setup {
     ensure_installed = { "query" }, 
     ignore_install = { "smithy" },
@@ -319,14 +330,16 @@ require'nvim-treesitter.configs'.setup {
 
 To allow tree-sitter to do folding based on =folds.scm=, add the following to =init.vim=.
 
-#+BEGIN_SRC vimrc-mode
+#+NAME: lst:vim-ts-folding
+#+BEGIN_SRC vimrc-mode :noeval
 set foldmethod=expr
 set foldexpr=nvim_treesitter#foldexpr()
 #+END_SRC
 
 Once the core plugin has been installed you can add the following Lua block in =init.vim= to install /this/ grammar.
 
-#+BEGIN_SRC lua
+#+NAME: lst:vim-ts-add-smithy
+#+BEGIN_SRC lua :noeval
 local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
 
 parser_config.smithy = {
@@ -343,7 +356,8 @@ parser_config.smithy = {
 
 Additionally, try the  [[https://github.com/nvim-treesitter/nvim-treesitter-context][nvim-treesitter-context]] and [[https://github.com/nvim-treesitter/nvim-treesitter-refactor][nvim-treesitter-refactor]] plugins based on tree-sitter.
 
-#+BEGIN_SRC vimrc-mode
+#+NAME: lst:vim-ts-extras
+#+BEGIN_SRC vimrc-mode :noeval
 call plug#begin()
 
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
@@ -355,7 +369,8 @@ call plug#end()
 
 Add the corresponding configuration:
 
-#+BEGIN_SRC lua
+#+NAME: lst:vim-ts-playground-config
+#+BEGIN_SRC lua :noeval
 require'nvim-treesitter.configs'.setup {
     // …
     playground = {
