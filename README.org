@@ -221,7 +221,7 @@ TBD
 
 ** Lint
 
-The file =lint.scm= contains a set of rules, each of which will select nodes that break some rule. For example, one rule
+The file =lint.scm= contains a set of queries, each of which will select nodes that break some rule. For example, one rule
 selects all operations statement names that do not follow the Smithy naming /conventions/.
 
 #+NAME: lst:lint-query-example

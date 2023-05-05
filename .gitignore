@@ -174,14 +174,13 @@ Cargo.lock
 
 ### Tree-Sitter ###
 
+# Org-Mode generated
+/README.html
+
 # From the debug test tool
 /log.html
 
 # Generated for the playground
 /tree-sitter-*.wasm
 
-# Created for bindings, delete these if you want to push the build files to the repo.
-/Cargo.toml
-/binding.gyp
-/bindings/
-/src/
+/build/
