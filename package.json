@@ -28,6 +28,10 @@
     "test": "make test_grammar",
     "clean": "make clean"
   },
+  "main": "bindings/node",
+  "directories": {
+    "test": "test"
+  },
   "tree-sitter": [
     {
       "scope": "source.smithy",
