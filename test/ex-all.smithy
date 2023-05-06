@@ -31,7 +31,7 @@ string SomeStringType
 apply MyString @length(min: 1, max: 10)
 
 list SomeList {
-    member: CitySummary
+member: CitySummary
 }
 
 enum SomeEnumeration {

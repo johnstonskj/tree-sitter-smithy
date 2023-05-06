@@ -269,6 +269,64 @@ The file =tags.scm= extracts tags from a Smithy file assigning them the followin
 
 * Using the grammar
 
+** Emacs (< 29)
+
+While Emacs 29 includes a builtin [[https://git.savannah.gnu.org/cgit/emacs.git/tree/lisp/treesit.el][treesit]], prior versions rely on separate [[https://emacs-tree-sitter.github.io/][tree-sitter]] and tree-sitter-/langs/ packages.
+My configuration relies on [[https://github.com/jwiegley/use-package][use-package]] so you may need to adjust the following accordingly.
+
+#+BEGIN_SRC emacs-lisp :noeval
+(use-package tree-sitter :ensure t)
+
+(use-package tree-sitter-langs :ensure t :after tree-sitter)
+#+END_SRC
+
+Now, the way this works is that there needs to be a mapping from an existing major mode to a tree-sitter parser, so
+install the [[https://github.com/mnemitz/smithy-mode][smithy-mode]] from MELPA. Note that this currently targets Smithy 1.x and so not all highlighting works as
+expected.
+
+#+BEGIN_SRC emacs-lisp :noeval
+(use-package smithy-mode :ensure t)
+#+END_SRC
+
+Also, the tree-sitter package is uses version 13 of the ABI, so we need to force a build with this specific version as
+the Makefile by default uses "latest".
+
+#+BEGIN_SRC bash :noeval
+TS_GENERATE_ABI=13 make grammar
+#+END_SRC
+
+Now that you have the built library you need to copy it to a directory that is in the list ~tree-sitter-load-path~, or
+alternatively add the =build= directory to this path. Once the library is correctly placed, load it.
+
+#+BEGIN_SRC emacs-lisp :noeval
+(tree-sitter-load 'smithy)
+#+END_SRC
+
+To ensure this worked, describe the variable ~tree-sitter-languages~ which should include an entry that looks like
+~(smithy . #<user-ptr …>)~.
+
+Now, make the connection between the major mode and newly loaded parser library.
+
+#+BEGIN_SRC emacs-lisp :noeval
+(add-to-list 'tree-sitter-major-mode-language-alist
+             ('smithy-mode 'smithy))
+#+END_SRC
+
+Finally, hook =tree-sitter-mode= and =tree-sitter-hl-mode= (minor modes) to =smithy-mode= so that they are already available.
+
+#+BEGIN_SRC emacs-lisp :noeval
+(add-hook 'smithy-mode-hook #'tree-sitter-mode)
+(add-hook 'smithy-mode-hook #'tree-sitter-hl-mode)
+#+END_SRC
+
+Now, open a Smithy file and try =M-x tree-sitter-debug-mode= to show the current buffer’s syntax tree in a separate buffer
+or try =M-x tree-sitter-query-builder= to open the query playground.
+
+** Emacs (>= 29)
+
+TBD
+
+
 ** Neovim
 
 [[https://neovim.io/][Neovim]] has some great tree-sitter support with the [[https://github.com/nvim-treesitter/nvim-treesitter][nvim-tree-sitter]] and a nice in-editor [[https://github.com/nvim-treesitter/playground][playground]]. Figure

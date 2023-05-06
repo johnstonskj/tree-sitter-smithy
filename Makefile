@@ -28,7 +28,8 @@ INSTALL_INCLUDE_DIR := $(INSTALL_ROOT_DIR)/include
 PATH := $(ROOT)/node_modules/.bin:$(PATH)
 
 TS_CLI := tree-sitter
-TS_GENERATE := generate --log --no-bindings
+TS_GENERATE_ABI ?=latest
+TS_GENERATE := generate --abi=$(TS_GENERATE_ABI)
 TS_TEST := test
 
 # ----------------------------------------------------------------------------
@@ -74,7 +75,7 @@ ALL_BINDINGS := $(BINDING_NODE) $(BINDING_RUST) $(BINDING_WASM)
 # Start Here
 # ----------------------------------------------------------------------------
 
-all: test_grammar parser_dylib bindings
+all: grammar parser_dylib bindings
 
 parser_dylib: $(PARSER)
 
@@ -94,11 +95,13 @@ nothing:
 # Build: Grammar
 # ----------------------------------------------------------------------------
 
-test_grammar: clean_tests $(SRC_DIR)/grammar.json
+grammar: grammar_test
+
+grammar_test: grammar_test_clean $(SRC_DIR)/grammar.json
 	$(TS_CLI) $(TS_TEST) $(TS_TEST_FLAGS)
 
 .PHONE: clean_tests
-clean_tests:
+grammar_test_clean:
 	rm -f $(TST_DIR)/corpus/*.txt\~ $(TST_DIR)/corpus/.*.\~undo-tree\~ && \
     rm -f $(TST_DIR)/highlight/*.smithy~ $(TST_DIR)/highlight/.*.\~undo-tree\~
 

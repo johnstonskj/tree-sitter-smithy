@@ -40,27 +40,21 @@
       ],
       "folds": [
         "queries/folds.scm",
-        "node_modules/tree-sitter-smithy/queries/folds.scm"
       ],
       "highlights": [
         "queries/highlights.scm",
-        "node_modules/tree-sitter-smithy/queries/highlights.scm"
       ],
       "indent": [
         "queries/highlights.scm",
-        "node_modules/tree-sitter-smithy/queries/indent.scm"
       ],
       "injections": [
         "queries/injections.scm",
-        "node_modules/tree-sitter-smithy/queries/injections.scm"
       ],
       "lint": [
         "queries/lint.scm",
-        "node_modules/tree-sitter-smithy/queries/lint.scm"
       ],
       "tags": [
         "queries/tags.scm",
-        "node_modules/tree-sitter-smithy/queries/tags.scm"
       ],
       "injection-regex": "^smithy$"
     }
