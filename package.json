@@ -28,7 +28,6 @@
     "test": "make test_grammar",
     "clean": "make clean"
   },
-  "main": "bindings/node",
   "directories": {
     "test": "test"
   },
@@ -39,22 +38,22 @@
         "smithy"
       ],
       "folds": [
-        "queries/folds.scm",
+        "queries/folds.scm"
       ],
       "highlights": [
-        "queries/highlights.scm",
+        "queries/highlights.scm"
       ],
       "indent": [
-        "queries/highlights.scm",
+        "queries/highlights.scm"
       ],
       "injections": [
-        "queries/injections.scm",
+        "queries/injections.scm"
       ],
       "lint": [
-        "queries/lint.scm",
+        "queries/lint.scm"
       ],
       "tags": [
-        "queries/tags.scm",
+        "queries/tags.scm"
       ],
       "injection-regex": "^smithy$"
     }

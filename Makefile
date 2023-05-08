@@ -81,13 +81,13 @@ parser_dylib: $(PARSER)
 
 bindings: $(ALL_BINDINGS)
 
-.PHONE: clean
+.PHONY: clean
 clean:
 	rm -rf $(NODE_BUILD_DIR)
 	rm -rf $(RUST_BUILD_DIR)
 	rm $(BINDING_WASM)
 
-.PHONE: nothing
+.PHONY: nothing
 nothing:
 	echo $(BASE_NAME) $(PARSER)
 
@@ -100,7 +100,7 @@ grammar: grammar_test
 grammar_test: grammar_test_clean $(SRC_DIR)/grammar.json
 	$(TS_CLI) $(TS_TEST) $(TS_TEST_FLAGS)
 
-.PHONE: clean_tests
+.PHONY: clean_tests
 grammar_test_clean:
 	rm -f $(TST_DIR)/corpus/*.txt\~ $(TST_DIR)/corpus/.*.\~undo-tree\~ && \
     rm -f $(TST_DIR)/highlight/*.smithy~ $(TST_DIR)/highlight/.*.\~undo-tree\~
@@ -151,3 +151,25 @@ $(BINDING_NODE): $(ROOT)/binding.gyp $(NODE_SRC_DIR)/index.js $(NODE_SRC_DIR)/bi
 
 $(BINDING_WASM): $(SRC_DIR)/grammar.json
 	$(TS_CLI) build-wasm
+
+# ----------------------------------------------------------------------------
+# Setup
+# ----------------------------------------------------------------------------
+
+INSTALLER=brew
+INSTALL_CMD=$(INSTALLER) install
+
+setup: node npm emscripten
+
+.PHONY: node
+node:
+	$(INSTALL_CMD) node
+
+.PHONY: npm
+npm:
+	$(INSTALL_CMD) npm
+
+.PHONY: emscripten
+emscripten:
+	$(INSTALL_CMD) emscripten
+
